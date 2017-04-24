@@ -39,27 +39,28 @@ def MakeMap(corner,pose):
 
      
 
-        xchips_pos = [rotate(x,y,gap,-1*y1,q),
-                      rotate(x,y,2*gap,-1*y1,q),
-                      rotate(x,y,3*gap,-1*y1,q),
-                      rotate(x,y,4*gap,-1*y1,q),
-                      rotate(x,y,5*gap,-1*y1,q)]
-        #[(x+gap*cos(q)+y1*sin(q),  y-gap*sin(q)+y1*cos(q)),
-        #              (x+2*gap*cos(q)+y1*sin(q),y-2*gap*sin(q)+y1*cos(q)),
-        #              (x+3*gap*cos(q)+y1*sin(q),y-3*gap*sin(q)+y1*cos(q)),
-        #              (x+4*gap*cos(q)+y1*sin(q),y-4*gap*sin(q)+y1*cos(q)),
-        #              (x+5*gap*cos(q)+y1*sin(q),y-5*gap*sin(q)+y1*cos(q))]
+        xchips_pos = [rotate(x,y,gap,-y1,q),
+                      rotate(x,y,2*gap,-y1,q),
+                      rotate(x,y,3*gap,-y1,q),
+                      rotate(x,y,4*gap,-y1,q),
+                      rotate(x,y,5*gap,-y1,q)]
+        xpickup_pos = [rotate(x,y,gap,-y2,q),
+                       rotate(x,y,2*gap,-y2,q),
+                       rotate(x,y,3*gap,-y2,q),
+                       rotate(x,y,4*gap,-y2,q),
+                       rotate(x,y,5*gap,-y2,q)]
 
         ochips_pos = [rotate(x,y,x4-gap,y4+y1,q),
                       rotate(x,y,x4-2*gap,y4+y1,q),
                       rotate(x,y,x4-3*gap,y4+y1,q),
                       rotate(x,y,x4-4*gap,y4+y1,q)]
-        #[(x+(x4-gap)*cos(q)+(y4+y1)*sin(q),  y-(x4-gap)*sin(q)+(y4+y1)*cos(q)),
-        #              (x+(x4-2*gap)*cos(q)+(y4+y1)*sin(q), y-(x4-2*gap)*sin(q)+(y4+y1)*cos(q)),
-        #              (x+(x4-3*gap)*cos(q)+(y4+y1)*sin(q), y-(x4-3*gap)*sin(q)+(y4+y1)*cos(q)),
-        #              (x+(x4-4*gap)*cos(q)+(y4+y1)*sin(q), y-(x4-4*gap)*sin(q)+(y4+y1)*cos(q))]
         
-        start1 = rotate(x,y,-1*start_diff,-1*start_diff,q)
+        opickup_pos = [rotate(x,y,x4-gap,y4+y2,q),
+                      rotate(x,y,x4-2*gap,y4+y2,q),
+                      rotate(x,y,x4-3*gap,y4+y2,q),
+                      rotate(x,y,x4-4*gap,y4+y2,q)]
+        
+        start1 = rotate(x,y,-start_diff,-start_diff,q)
         start2 = rotate(x,y,x4+start_diff,y4+start_diff,q)
 
     # elif corner == 2:
@@ -100,10 +101,14 @@ def MakeMap(corner,pose):
 
 
 
-        ochips_pos = [rotate(x,y,gap,-1*y1,q),
-                      rotate(x,y,2*gap,-1*y1,q),
-                      rotate(x,y,3*gap,-1*y1,q),
-                      rotate(x,y,4*gap,-1*y1,q)]
+        ochips_pos = [rotate(x,y,gap,-y1,q),
+                      rotate(x,y,2*gap,-y1,q),
+                      rotate(x,y,3*gap,-y1,q),
+                      rotate(x,y,4*gap,-y1,q)]
+        opickup_pos = [rotate(x,y,gap,-y2,q),
+                      rotate(x,y,2*gap,-y2,q),
+                      rotate(x,y,3*gap,-y2,q),
+                      rotate(x,y,4*gap,-y2,q)]
 
         xchips_pos = [rotate(x,y,x4-gap,y4+y1,q),
                       rotate(x,y,x4-2*gap,y4+y1,q),
@@ -111,7 +116,15 @@ def MakeMap(corner,pose):
                       rotate(x,y,x4-4*gap,y4+y1,q),
                       rotate(x,y,x4-5*gap,y4+y1,q)]
 
-        start2 = rotate(x,y,-1*start_diff,-1*start_diff,q)
+        xpickup_pos = [rotate(x,y,x4-gap,y4+y2,q),
+                       rotate(x,y,x4-2*gap,y4+y2,q),
+                       rotate(x,y,x4-3*gap,y4+y2,q),
+                       rotate(x,y,x4-4*gap,y4+y2,q),
+                       rotate(x,y,x4-5*gap,y4+y2,q)]
+
+
+        
+        start2 = rotate(x,y,-start_diff,-start_diff,q)
         start1 = rotate(x,y,x4+start_diff,y4+start_diff,q)
     # elif corner == 4:
     #     p11 = (x+x1*cos(q)+y1*sin(q),y-x1*sin(q)+y1*cos(q))
@@ -131,7 +144,8 @@ def MakeMap(corner,pose):
     #                   [(x+x3,y+y1),(x+x3,y+y2),(x+x3,y+y3)]]
 
     board_pose = [[p11,p12,p13],[p21,p22,p23],[p31,p32,p33]]
-    return (board_pose,xchips_pos,ochips_pos,start1,start2)
+    
+    return (board_pose,xchips_pos,ochips_pos,start1,start2,xpickup_pos,opickup_pos)
     print(board_pose)
 
 

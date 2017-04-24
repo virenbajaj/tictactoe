@@ -1,22 +1,52 @@
 #GamePlay.fsm
 
 from cozmo_fsm import *
+def dummy(a,b):pass
+custom_objs.declare_objects = dummy 
 from cozmo_objects import CustomObject,CustomObjectTypes, CustomObjectMarkers
 from MakeMap import *
 
 
 class Initialize(StateNode):
 	def start(self,event=None):
-		(board_pose,xchips_pos,ochips_pos,start1,start2) = MakeMap(corner,(x,y,q))
+		(board_pose,xchips_pos,ochips_pos,start1,start2,xpickup_pos,opickup_pos) = MakeMap(corner,(x,y,q))
 		self.parent.map_board = board_pose
 		self.parent.xpos = xchips_pos
 		self.parent.opos = ochips_pos
-		self.parent.start1 = start1
-		self.parent.start2 = start2
+		self.parent.start1 = start1 # has x chips next to it 
+		self.parent.start2 = start2  # has o chips next to it 
+
+
+
+class PlanMove(StateNode):
+	def start(self,event=None):
+		state = self.parent.est_board
+		player = self.parent.player
+		tile = GameEst(state,player)
+		
+		#want to get next chip pos 
+		if player == 'X':
+		
+			chip_number = move_count # will be max 5 
+			chip_pos    = xpickup_pos[chip_number]
+
+
+		else:
+			#player = 'O'
+			chip_number = move_count # will be max 4
+			chip_pos 	= opickup_pos[chip_number]
+
+		
+
+
+
+
+
 
 
 class GamePlay(StateMachineProgram):
 	def start(self):
+		self.player = 'X' # 'O'
 		self.move_made = -1
 		self.move_recieved = -1
 		self.move_count = 0
@@ -41,7 +71,7 @@ class GamePlay(StateMachineProgram):
 												CustomObjectMarkers.Triangles3,
 												CustomObjectMarkers.Circles4,
 												CustomObjectMarkers.Diamonds4,
-												CustomObjectMarkers.Hexagons4.,
+												CustomObjectMarkers.Hexagons4,
 												CustomObjectMarkers.Triangles4,
 												40,40,0,1,40,40,True)
 
@@ -51,7 +81,7 @@ class GamePlay(StateMachineProgram):
 
 		start: StateNode() =T(1)=> Initialize() =C=> GoToStart() =C=> plan
 		plan: PlanMove() =D()=> move 
-		move: PickUpChip() =C=> PlaceChip() =C=> GoToStart() =C=> TellR2() =C=> D
+		move: PickUpChip() =C=> PlaceChip() =C=> GoToStart() =C=> TellR2()
 	}
 
 
