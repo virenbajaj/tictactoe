@@ -1,0 +1,57 @@
+#GamePlay.fsm
+
+from cozmo_fsm import *
+from cozmo_objects import CustomObject,CustomObjectTypes, CustomObjectMarkers
+from MakeMap import *
+
+
+class Initialize(StateNode):
+	def start(self,event=None):
+		(board_pose,xchips_pos,ochips_pos,start1,start2) = MakeMap(corner,(x,y,q))
+		self.parent.map_board = board_pose
+		self.parent.xpos = xchips_pos
+		self.parent.opos = ochips_pos
+		self.parent.start1 = start1
+		self.parent.start2 = start2
+
+
+class GamePlay(StateMachineProgram):
+	def start(self):
+		self.move_made = -1
+		self.move_recieved = -1
+		self.move_count = 0
+		self.est_board = [' ']*9
+		self.map_board = []
+		self.xpos = []
+		self.opos = []
+		self.start1 = (-1,-1)
+		self.start2 = (-1,-1)
+
+		corner1 = robot.world.define_custom_box(CustomObjectTypes.CustomType10,
+												CustomObjectMarkers.Cirlces2,
+												CustomObjectMarkers.Diamonds2,
+												CustomObjectMarkers.Hexagons2,
+												CustomObjectMarkers.Triangles2,
+												CustomObjectMarkers.Circles3,
+												CustomObjectMarkers.Diamonds3,
+												40,40,0,1,40,40,True)
+
+		corner2 = robot.world.define_custom_box(CustomObjectTypes.CustomType11,
+												CustomObjectMarkers.Hexagons3,
+												CustomObjectMarkers.Triangles3,
+												CustomObjectMarkers.Circles4,
+												CustomObjectMarkers.Diamonds4,
+												CustomObjectMarkers.Hexagons4.,
+												CustomObjectMarkers.Triangles4,
+												40,40,0,1,40,40,True)
+
+		super().start()
+
+	$setup{
+
+		start: StateNode() =T(1)=> Initialize() =C=> GoToStart() =C=> plan
+		plan: PlanMove() =D()=> move 
+		move: PickUpChip() =C=> PlaceChip() =C=> GoToStart() =C=> TellR2() =C=> D
+	}
+
+
