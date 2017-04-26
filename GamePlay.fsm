@@ -6,56 +6,69 @@ custom_objs.declare_objects = dummy
 from cozmo_objects import CustomObject,CustomObjectTypes, CustomObjectMarkers
 from MakeMap import *
 
+class GoToStart(PilotToPose):
+	def __init__(self,pose=None):
+		super().__init__(pose)
+		x,y = self.parent.start1
+		self.target_pose=Pose(x,y,0,angle_z = cozmo.util.radians(self.parent.board_ori))
 
 class Initialize(StateNode):
 	def start(self,event=None):
-		(board_pose,xchips_pos,ochips_pos,start1,start2,xpickup_pos,opickup_pos) = MakeMap(corner,(x,y,q))
-		self.parent.map_board = board_pose
-		self.parent.xpos = xchips_pos
-		self.parent.opos = ochips_pos
-		self.parent.start1 = start1 # has x chips next to it 
-		self.parent.start2 = start2  # has o chips next to it 
-
+		#(board_pose,xchips_pos,ochips_pos,start1,start2) = MakeMap(corner,(x,y,q))
+		self.parent.board_ori = q
+		self.parent.map_board = MapBoard(corner,x,y,q)
+		self.parent.xpos,self.parent.xpick = MapXChips(corner,x,y,q)
+		self.parent.opos,self.parent.opick = MapOChips(corner,x,y,q)
+		self.parent.start1,self.parent.start2 = MapStart(corner,x,y,q)
+		
+		#put in rrt obstacles ADD THEM INTO THE WORLD MAP
+		robot.world.rrt.auto_obstacles = False
+		temp_obs = []
+		for i in range(0,5):
+			temp_obs.append(Circle(center = transform.point(self.parent.xpos[i]),radius=10))
+		for i in range(0,4):
+			temp_obs.append(Circle(center = transform.point(self.parent.opos[i]),radius=10))
+		robot.world.rrt.set_obstacles = temp_obs
+		
+		super().start()
+		self.post_completion()
 
 
 class PlanMove(StateNode):
 	def start(self,event=None):
 		state = self.parent.est_board
 		player = self.parent.player
-		tile = GameEst(state,player)
+		tile = GameEst(state,player) #between 0 and 8 inclusive
 		
 		#want to get next chip pos 
 		if player == 'X':
-		
-			chip_number = move_count # will be max 5 
+			chip_number = self.parent.move_count # will be max 5 
 			chip_pos    = xpickup_pos[chip_number]
-
-
 		else:
 			#player = 'O'
-			chip_number = move_count # will be max 4
-			chip_pos 	= opickup_pos[chip_number]
-
+			chip_number = self.parent.move_count # will be max 4
+			chip_pos    = opickup_pos[chip_number]
+		self.parent.move_count += 1
 		
-
-
-
-
-
+		#HAVE TO FIGURE OUT ADDING AND REMOVING CHIPS AS OBSTACLES
+		#WE NEED TO ADD THEM TO THE WORLD MAP
 
 
 class GamePlay(StateMachineProgram):
 	def start(self):
-		self.player = 'X' # 'O'
+		self.player = 'X' # 'O;
 		self.move_made = -1
 		self.move_recieved = -1
 		self.move_count = 0
 		self.est_board = [' ']*9
 		self.map_board = []
 		self.xpos = []
+		self.xpick = []
 		self.opos = []
+		self.opick = []
 		self.start1 = (-1,-1)
 		self.start2 = (-1,-1)
+		self.board_ori = 0
 
 		corner1 = robot.world.define_custom_box(CustomObjectTypes.CustomType10,
 												CustomObjectMarkers.Cirlces2,
@@ -81,7 +94,7 @@ class GamePlay(StateMachineProgram):
 
 		start: StateNode() =T(1)=> Initialize() =C=> GoToStart() =C=> plan
 		plan: PlanMove() =D()=> move 
-		move: PickUpChip() =C=> PlaceChip() =C=> GoToStart() =C=> TellR2()
+		move: PickUpChip() =C=> Forward(100) =CNext=> PlaceChip() =C=> GoToStart() =C=> TellR2()
 	}
 
 
