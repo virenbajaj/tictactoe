@@ -7,14 +7,28 @@ from cozmo_objects import CustomObject,CustomObjectTypes, CustomObjectMarkers
 from MakeMap import *
 
 
+class GoToStart(PilotToPose):
+	def __init__(self,pose=None):
+		super().__init__(pose)
+		x,y = self.parent.start1
+		self.target_pose=Pose(x,y,0,angle_z = cozmo.util.radians(self.parent.board_ori))
+
 class Initialize(StateNode):
 	def start(self,event=None):
-		(board_pose,xchips_pos,ochips_pos,start1,start2) = MakeMap(corner,(x,y,q))
-		self.parent.map_board = board_pose
-		self.parent.xpos = xchips_pos
-		self.parent.opos = ochips_pos
-		self.parent.start1 = start1
-		self.parent.start2 = start2
+		#(board_pose,xchips_pos,ochips_pos,start1,start2) = MakeMap(corner,(x,y,q))
+		self.parent.board_ori = q
+		self.parent.map_board = MapBoard(corner,x,y,q)
+		self.parent.xpos,self.parent.xpick = MapXChips(corner,x,y,q)
+		self.parent.opos,self.parent.opick = MapOChips(corner,x,y,q)
+		self.parent.start1,self.parent.start2 = MapStart(corner,x,y,q)
+		
+		robot.world.rrt.auto_obstacles = False
+		
+		temp_obs = []
+		for i in range(0,5):
+			temp_obs.append(Circle(center = transform.point(self.parent.xpos[i]),radius=10))
+		for i in range(0,4):
+			temp_obs.append(Circle(center = transform.point(self.parent.opos[i]),radius=10))
 
 
 class GamePlay(StateMachineProgram):
@@ -28,6 +42,7 @@ class GamePlay(StateMachineProgram):
 		self.opos = []
 		self.start1 = (-1,-1)
 		self.start2 = (-1,-1)
+		self.board_ori = 0
 
 		corner1 = robot.world.define_custom_box(CustomObjectTypes.CustomType10,
 												CustomObjectMarkers.Cirlces2,
