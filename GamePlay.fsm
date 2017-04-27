@@ -14,21 +14,31 @@ class GoToStart(PilotToPose):
 
 class Initialize(StateNode):
 	def start(self,event=None):
+		#get marker postion. precondition: first object in world map is the corner marker 
+		mx = list(robot.world.world_map.objects)[0].pose.position.x
+		my = list(robot.world.world_map.objects)[0].pose.position.y
+		mq = list(robot.world.world_map.objects)[0].pose.rotation.angle_z.radians
+		typ = list(robot.world.world_map.objects)[0].object_type
+		if typ == CustomObjectTypes.CustomType10: corner = 1
+		else: corner = 3
+
 		#(board_pose,xchips_pos,ochips_pos,start1,start2) = MakeMap(corner,(x,y,q))
-		self.parent.board_ori = q
-		self.parent.map_board = MapBoard(corner,x,y,q)
-		self.parent.xpos,self.parent.xpick = MapXChips(corner,x,y,q)
-		self.parent.opos,self.parent.opick = MapOChips(corner,x,y,q)
-		self.parent.start1,self.parent.start2 = MapStart(corner,x,y,q)
+		self.parent.board_ori = mq
+		self.parent.map_board = MapBoard(corner,mx,my,mq)
+		self.parent.xpos,self.parent.xpick = MapXChips(corner,mx,my,mq)
+		self.parent.opos,self.parent.opick = MapOChips(corner,mx,my,mq)
+		self.parent.start1,self.parent.start2 = MapStart(corner,mx,my,mq)
 		
-		#put in rrt obstacles ADD THEM INTO THE WORLD MAP
-		robot.world.rrt.auto_obstacles = False
+		#add chips to world map
 		temp_obs = []
 		for i in range(0,5):
-			temp_obs.append(Circle(center = transform.point(self.parent.xpos[i]),radius=10))
+			x,y = self.parent.xpos[i]
+			chid = 1000+i
+			robot.world.world_map.objects[chid] = ChipObj(chid,x,y)
 		for i in range(0,4):
-			temp_obs.append(Circle(center = transform.point(self.parent.opos[i]),radius=10))
-		robot.world.rrt.set_obstacles = temp_obs
+			x,y = self.parent.opos[i]
+			chid = 1005+i
+			robot.world.world_map.objects[chid] = ChipObj(chid,x,y)
 		
 		super().start()
 		self.post_completion()
