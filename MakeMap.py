@@ -7,10 +7,6 @@ def MapXChips(corner,x,y,q):
     l = 100 # box length
     m = 40  # marker length
     cozmo_width = 100 #mm
-    start_diff = 150 #distance used to get start position
-    
-    #x,y,q = pose #x and y are the position of the markers
-                 #q is the rotation of the marker
     
     #scale factors for center of different boxes
     x1 = y1 = 0.5*(m+l) 
@@ -57,7 +53,7 @@ def MapOChips(corner,x,y,q):
     #scale factors for center of different boxes
     x1 = y1 = 0.5*(m+l) 
     x2 = y2 = 0.5*(m+3*l)
-    #x3 = y3 = 0.5*(m+5*l)
+    x3 = y3 = 0.5*(m+5*l)
     
     x4 = y4 = (m+3*l) #other marker
     gap = m*0.5+cozmo_width*1.25 #between chips
@@ -87,19 +83,9 @@ def MapOChips(corner,x,y,q):
 def MapStart(corner,x,y,q):
     l = 100 # box length
     m = 40  # marker length
-    #cozmo_width = 100 #mm
     start_diff = 150 #distance used to get start position
     
-    #x,y,q = pose #x and y are the position of the markers
-                 #q is the rotation of the marker
-    
-    #scale factors for center of different boxes
-    #x1 = y1 = 0.5*(m+l) 
-    #x2 = y2 = 0.5*(m+3*l)
-    #x3 = y3 = 0.5*(m+5*l)
-    
     x4 = y4 = (m+3*l) #other marker
-    #gap = m*0.5+cozmo_width*1.25 #between chips
     
     if corner == 1:
         start1 = rotate(x,y,-start_diff,-start_diff,q)
@@ -139,12 +125,6 @@ def MapBoard(corner,x,y,q):
         p31 = rotate(x,y,x1,y1,q) #(x+x1*cos(q)+y1*sin(q),y-x1*sin(q)+y1*cos(q))
         p32 = rotate(x,y,x2,y1,q) #(x+x2*cos(q)+y1*sin(q),y-x2*sin(q)+y1*cos(q))
         p33 = rotate(x,y,x3,y1,q) #(x+x3*cos(q)+y1*sin(q),y-x3*sin(q)+y1*cos(q))
-
-        board_pose = [[(x+x1,y+y3),(x+x2,y+y3),(x+x3,y+y3)],
-                      [(x+x1,y+y2),(x+x2,y+y2),(x+x3,y+y2)],
-                      [(x+x1,y+y1),(x+x2,y+y1),(x+x3,y+y1)]]
-
-     
 
         xchips_pos = [rotate(x,y,gap,-y1,q),
                       rotate(x,y,2*gap,-y1,q),
@@ -201,13 +181,6 @@ def MapBoard(corner,x,y,q):
         p32 = (x+x2*cos(q)+y3*sin(q),y-x2*sin(q)+y3*cos(q))
         p33 = (x+x1*cos(q)+y3*sin(q),y-x1*sin(q)+y3*cos(q))
 
-
-        board_pose = [[(x+x3,y+y1),(x+x2,y+y1),(x+x1,y+y1)],
-                      [(x+x3,y+y2),(x+x2,y+y2),(x+x1,y+y2)],
-                      [(x+x3,y+y3),(x+x2,y+y3),(x+x1,y+y3)]]
-
-
-
         ochips_pos = [rotate(x,y,gap,-y1,q),
                       rotate(x,y,2*gap,-y1,q),
                       rotate(x,y,3*gap,-y1,q),
@@ -250,7 +223,7 @@ def MapBoard(corner,x,y,q):
     #                   [(x+x2,y+y1),(x+x2,y+y2),(x+x2,y+y3)],
     #                   [(x+x3,y+y1),(x+x3,y+y2),(x+x3,y+y3)]]
 
-    board_pose = [[p11,p12,p13],[p21,p22,p23],[p31,p32,p33]]
+    #board_pose = [[p11,p12,p13],[p21,p22,p23],[p31,p32,p33]]
     return [p11,p12,p13,p21,p22,p23,p31,p32,p33]
     #return (board_pose,xchips_pos,ochips_pos,start1,start2,xpickup_pos,opickup_pos)
     print(board_pose)
@@ -258,4 +231,4 @@ def MapBoard(corner,x,y,q):
 
 
 
-print(MakeMap(1,(0,0,pi/4)))
+print(MakeMap(1,0,0,pi/4))
