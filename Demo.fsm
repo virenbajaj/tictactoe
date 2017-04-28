@@ -1,0 +1,53 @@
+from cozmo_fsm import *
+import CozmoClient,CozmoServer
+
+class SendMessage(StateNode):
+  def __init__(self,msg,recipients=[],client=None):
+    self.msg = msg
+    self.recipients = recipients
+    self.client = client
+    super().__init__()
+  def start(self,event=None):
+    if self.running: return
+    super().start(event)
+    if self.client is None: self.client = self.parent.client
+    self.client.sendMessage(self.msg,sendTo=self.recipients)
+    self.post_completion()
+
+class AwaitMessage(StateNode):
+  def __init__(self,senders=[],client=None):
+    self.senders = senders
+    self.client = client
+    super().__init__()
+  def start(self,event=None):
+    if self.running: return
+    super().start(event)
+    if self.client is None: self.client = self.parent.client
+    msgObject = self.client.awaitMessage(senders=self.senders)
+    print(msgObject["sender"] + " says " + str(msgObject["message"]))
+    self.post_data(msgObject["message"])
+    self.post_completion()
+
+def processMessage(client,msgObj):
+  if msgObj["sender"] != "server" and msgObj["message"] != "hi":
+    client.sendMessage("shh",sendTo=msgObj["sender"])
+
+class Demo(StateMachineProgram):
+  def __init__(self):
+    ##Choice 1. This is the 'host' computer and thus runs the server##
+    self.server = CozmoServer.Server().startServer() #this will print out the IP Address to connect to
+    self.client = CozmoClient.Client().startClient() #this will connect to local server
+    ##
+    ##Choice 2. This is a client computer and thus connects to the server##
+    #self.client = CozmoClient.Client().startClient(ipaddr="my.ip.addr.ess")
+    #
+
+    #You have the option of overriding client's "processMessage" function
+    #if you want certain things to happen when certain messages arrive.
+    #this function is called if someone sends a message you were not waiting for.
+    self.client.processFunction = processMessage
+    super().__init__()
+
+  $setup{
+    loop: SendMessage("hi","all") =C=> AwaitMessage("all") =SayData=> Say() =C=> loop
+  }

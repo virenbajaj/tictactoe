@@ -17,12 +17,12 @@ def isWinner(state,player):
     (board[8] == chip and board[4] == chip and board[0] == chip)) # diagonal
 
 
-def isTied(state,player):
+def isTied(state):
 	continue
 
 # Here is our algorithm for our Tic Tac Toe AI:
 #player is either 'X' or 'O' to signify who is making the move
-def Move(state,player)
+def move(state,player)
 	# Given a board and the player's chip, determine where to move and return that move.
     if player == 'X': other = 'O'
     else other = 'X'
@@ -61,4 +61,14 @@ def Move(state,player)
     return random.choice(free_sides)
 
 
-	  
+def nextMove(state,player):
+    if isWinner(state,"X"):
+        return "X"
+    elif isWinner(state,"O"):
+        return "O"
+    elif isTied(state):
+        return "XO"
+    else:
+        return move(state, player)
+
+

@@ -5,11 +5,20 @@ def dummy(a,b):pass
 custom_objs.declare_objects = dummy 
 from cozmo_objects import CustomObject,CustomObjectTypes, CustomObjectMarkers
 from MakeMap import *
+from GameEst import *
+import math
+import CozmoClient,CozmoServer
+import sys
+import socket
+ip = socket.gethostbyname(socket.gethostname())
 
 class GoToStart(PilotToPose):
 	def __init__(self,pose=None):
 		super().__init__(pose)
-		x,y = self.parent.start1
+		if self.parent.player=='X':
+			x,y = self.parent.start1
+		else: 
+			x,y = self.parent.start2
 		self.target_pose=Pose(x,y,0,angle_z = cozmo.util.radians(self.parent.board_ori))
 
 class Initialize(StateNode):
@@ -33,7 +42,7 @@ class Initialize(StateNode):
 		temp_obs = []
 		for i in range(0,5):
 			x,y = self.parent.xpos[i]
-			chid = 1000+i
+			chid = 1000+i #1000 is where Dave starts in the example code in piazza post
 			robot.world.world_map.objects[chid] = ChipObj(chid,x,y)
 		for i in range(0,4):
 			x,y = self.parent.opos[i]
@@ -46,34 +55,121 @@ class Initialize(StateNode):
 
 class PlanMove(StateNode):
 	def start(self,event=None):
-		state = self.parent.est_board
+		est_board = self.parent.est_board
 		player = self.parent.player
-		self.parent.move_made = tile = GameEst(state,player) #between 0 and 8 inclusive
+		self.parent.move_made = NextMove(est_board,player) #isWinner, isTied, or tile 0-8
 		
-		#want to get next chip pos 
-		if player == 'X':
-			chip_number = self.parent.move_count # will be max 5 
-			chip_pos    = xpickup_pos[chip_number]
-		else:
-			#player = 'O'
-			chip_number = self.parent.move_count # will be max 4
-			chip_pos    = opickup_pos[chip_number]
-		self.parent.move_count += 1
-		#go to animation nodes
-		if tile == 10:
-			#X cozmo won
-			self.post_success()
-		if tile == 11:
-			#O cozmo won
-			self.post_failure()
-		#HAVE TO FIGURE OUT ADDING AND REMOVING CHIPS AS OBSTACLES
-		#WE NEED TO ADD THEM TO THE WORLD MAP
 
+		if type(self.parent.move_made)==int: #check game not over
+			#want to get next chip pos 
+			if player == 'X':
+				chip_number = self.parent.move_count # will be max 5 
+				chip_pos    = xpickup_pos[chip_number]
+				chip = robot.world.world_map.objects[1000+chip_number]
+				chip.obstacle = False
+			else:
+				#player = 'O'
+				chip_number = self.parent.move_count # will be max 4
+				chip_pos    = opickup_pos[chip_number]
+				chip = robot.world.world_map.objects[1005+chip_number]
+				chip.obstacle = False
+
+			self.parent.est_board[self.parent.move_made] = player
+			self.parent.move_count += 1
+		
+		else:
+			#game is over because next move is a str
+			if self.parent.move_made == "X":
+		    	print("game over: X wins")
+		    	self.post_data("X")
+
+		    elif self.parent.move_made == "O":
+		    	print("game over: O wins")
+		    	self.post_data("O")
+
+		    elif self.parent.move_made == "XO"
+		   		print("game over: TIED")
+		   		self.post_data("XO")
+			
+		#go and pick up 
+
+
+class PickUpChip(PilotToPose):
+	def __init__(self,pose=None):
+		super().__init__(pose)
+
+	def start(self,event):
+		x,y = event.data 
+		q = self.parent.board_ori
+		self.target_pose = Pose(x,y,0,angle_z = cozmo.util.radians(math.pi - q))
+		super().start(event)
+
+		
+class PlaceChip(PilotPushToPose):
+	def __init__(self,event=None):
+		if type(self.parent.move_made)==int: #check if game not over
+			x,y = self.parent.map_board[self.parent.move_made]
+		super().__init__(Pose(x,y,0))
+
+
+class SendMessage(StateNode):
+	def __init__(self,msg,recipients=[],client=None):
+	    self.msg = self.parent.move_made # disregard placeholder -1 
+	    self.recipients = recipients
+	    self.client = client
+	    super().__init__()
+
+  def start(self,event=None):
+    if self.running: return
+    super().start(event)
+    if self.client is None: self.client = self.parent.client
+    self.client.sendMessage(self.msg,sendTo=self.recipients)
+    self.post_completion()
+
+
+class AwaitMessage(StateNode):
+    def __init__(self,senders=[],client=None):
+    	self.senders = senders
+        self.client = client
+        super().__init__()
+  
+    def start(self,event=None):
+       if self.running: return
+    	super().start(event)
+    	if self.client is None: self.client = self.parent.client
+    	msgObject = self.client.awaitMessage(senders=self.senders)
+    
+    	if msgObject["message"] == "X":
+    		print("game over: X wins")
+    		self.post_data("X")
+
+    	elif msgObject["message"] == "O":
+    		print("game over: O wins")
+    		self.post_data("O")
+
+    	elif msgObject["message"] == "XO"
+   			print("game over: TIED")
+   			self.post_data("XO")
+		else:
+			#msg has the tile other guy moved to
+			self.parent.move_recieved = msgObject["message"]
+			self.parent.est_board[self.parent.move_recieved] = self.parent.other
+
+    	#self.post_data(msgObject["message"])
+    	self.post_completion()
 
 class GamePlay(StateMachineProgram):
 	def start(self):
 		self.player = 'X' # 'O;
-		self.move_made = -1
+		self.other  =  'O' # 'X'
+		if self.player == 'X':
+			self.server = CozmoServer.Server().startServer() #this will print out the IP Address to connect to
+    		self.client = CozmoClient.Client().startClient() #this will connect to local server
+		else:
+			global ip 
+			self.client = CozmoClient.Client().startClient(ipaddr=ip)
+
+		self.move_made = -1 # whihc tile to place chip in 
 		self.move_recieved = -1
 		self.move_count = 0
 		self.est_board = [' ']*9
@@ -85,6 +181,7 @@ class GamePlay(StateMachineProgram):
 		self.start1 = (-1,-1)
 		self.start2 = (-1,-1)
 		self.board_ori = 0
+
 
 		corner1 = robot.world.define_custom_box(CustomObjectTypes.CustomType10,
 												CustomObjectMarkers.Cirlces2,
@@ -108,9 +205,26 @@ class GamePlay(StateMachineProgram):
 
 	$setup{
 
-		start: StateNode() =T(1)=> Initialize() =C=> GoToStart() =C=> plan
-		plan: PlanMove() =D()=> move 
-		move: PickUpChip() =C=> Forward(100) =CNext=> PlaceChip() =C=> GoToStart() =C=> TellR2()
+		start: StateNode() =T(1)=> Initialize() 
+						   =C=> GoToStart() 
+						   =C=> plan: PlanMove()
+		plan =D(int)=> move
+		#never happens - plan =D('X')=> SendMessage(-1,"all")=C=>#yay
+		plan =D('O')=> SendMessage(-1,"all")=C=>#nay
+		plan =D('XO')=> SendMessage(-1,"all")=C=>#meh
+
+		move: PickUpChip() =C=> Forward(100) 
+						   =CNext=> PlaceChip()
+						   =C=> GoToStart() 
+						   =C=> tellr2
+		
+		tellr2: SendMessage(-1,"all") =C=> wait: AwaitMessage("all") 
+		wait =C=> plan
+		wait =D('X')=> # yay
+		wait =D('0')=> # nay
+		wait =D('XO')=> # meh
+
+
 	}
 
 

@@ -6,7 +6,7 @@ def rotate(x,y,dx,dy,q)
 def MapXChips(corner,x,y,q):
     l = 100 # box length
     m = 40  # marker length
-    cozmo_width = 100 #mm
+    cozmo_width = 70 #mm
     
     #scale factors for center of different boxes
     x1 = y1 = 0.5*(m+l) 
@@ -14,7 +14,7 @@ def MapXChips(corner,x,y,q):
     x3 = y3 = 0.5*(m+5*l)
     
     x4 = y4 = (m+3*l) #other marker
-    gap = m*0.5+cozmo_width*1.25 #between chips
+    gap = cozmo_width*1.25 #between chips
     
     if corner == 1:
         xchips_pos = [rotate(x,y,gap,-y1,q),
@@ -56,7 +56,7 @@ def MapOChips(corner,x,y,q):
     x3 = y3 = 0.5*(m+5*l)
     
     x4 = y4 = (m+3*l) #other marker
-    gap = m*0.5+cozmo_width*1.25 #between chips
+    gap = cozmo_width*1.25 #between chips
     
     if corner == 1:
         ochips_pos = [rotate(x,y,x4-gap,y4+y1,q),
