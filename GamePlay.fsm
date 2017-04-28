@@ -15,6 +15,7 @@ ip = socket.gethostbyname(socket.gethostname())
 class GoToStart(PilotToPose):
 	def __init__(self,pose=None):
 		super().__init__(pose)
+		if self.parent.chip != None: self.parent.chip.obstacle = True
 		if self.parent.player=='X':
 			x,y = self.parent.start1
 		else: 
@@ -65,14 +66,18 @@ class PlanMove(StateNode):
 			if player == 'X':
 				chip_number = self.parent.move_count # will be max 5 
 				chip_pos    = xpickup_pos[chip_number]
-				chip = robot.world.world_map.objects[1000+chip_number]
-				chip.obstacle = False
+				self.parent.chip = robot.world.world_map.objects[1000+chip_number]
+				self.parent.chip.obstacle = False
+				self.parent.chip.x = self.parent.map_board[self.parent.move_made][0]
+				self.parent.chip.y = self.parent.map_board[self.parent.move_made][1]
 			else:
 				#player = 'O'
 				chip_number = self.parent.move_count # will be max 4
 				chip_pos    = opickup_pos[chip_number]
-				chip = robot.world.world_map.objects[1005+chip_number]
-				chip.obstacle = False
+				self.parent.chip = robot.world.world_map.objects[1005+chip_number]
+				self.parent.chip.obstacle = False
+				self.parent.chip.x = self.parent.map_board[self.parent.move_made][0]
+				self.parent.chip.y = self.parent.map_board[self.parent.move_made][1]
 
 			self.parent.est_board[self.parent.move_made] = player
 			self.parent.move_count += 1
@@ -152,8 +157,14 @@ class AwaitMessage(StateNode):
    			self.post_data("XO")
 		else:
 			#msg has the tile other guy moved to
-			self.parent.move_recieved = msgObject["message"]
+			m = self.parent.move_recieved = msgObject["message"]
 			self.parent.est_board[self.parent.move_recieved] = self.parent.other
+			if self.parent.player == 'X':
+				chip = robot.world.world_map.objects[1005+self.parent.move_count-1]
+				chip.x,chip.y = self.parent.map_board[m]
+			else:
+				chip = robot.world.world_map.objects[1000+self.parent.move_count]
+				chip.x,chip.y = self.parent.map_board[m]
 
     	#self.post_data(msgObject["message"])
     	self.post_completion()
@@ -181,6 +192,7 @@ class GamePlay(StateMachineProgram):
 		self.start1 = (-1,-1)
 		self.start2 = (-1,-1)
 		self.board_ori = 0
+		self.chip = None
 
 
 		corner1 = robot.world.define_custom_box(CustomObjectTypes.CustomType10,
