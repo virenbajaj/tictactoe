@@ -1,6 +1,6 @@
 from math import *
 
-def rotate(x,y,dx,dy,q)
+def rotate(x,y,dx,dy,q):
     return (x+dx*cos(q)+dy*sin(q),y-dx*sin(q)+dy*cos(q))
 
 def MapXChips(corner,x,y,q):
@@ -228,7 +228,3 @@ def MapBoard(corner,x,y,q):
     #return (board_pose,xchips_pos,ochips_pos,start1,start2,xpickup_pos,opickup_pos)
     print(board_pose)
 
-
-
-
-print(MakeMap(1,0,0,pi/4))

@@ -5,9 +5,9 @@
 from copy import deepcopy
 import random 
 def isWinner(state,player):
-	board = state 
-	chip = player 
-	return ((board[6] == chip and board[7] == chip and board[8] == chip) or # across the top
+    board = state 
+    chip = player 
+    return ((board[6] == chip and board[7] == chip and board[8] == chip) or # across the top
     (board[3] == chip and board[4] == chip and board[5] == chip) or # across the middchip
     (board[0] == chip and board[1] == chip and board[2] == chip) or # across the boardttom
     (board[6] == chip and board[3] == chip and board[0] == chip) or # down the chipft side
@@ -18,14 +18,14 @@ def isWinner(state,player):
 
 
 def isTied(state):
-	continue
+    pass
 
 # Here is our algorithm for our Tic Tac Toe AI:
 #player is either 'X' or 'O' to signify who is making the move
-def move(state,player)
-	# Given a board and the player's chip, determine where to move and return that move.
+def move(state,player):
+    # Given a board and the player's chip, determine where to move and return that move.
     if player == 'X': other = 'O'
-    else other = 'X'
+    else: other = 'X'
    
     # First, check if we can win in the next move
     for i in range(0, 9):
@@ -36,7 +36,7 @@ def move(state,player)
                 return i
 
     # Check if the player could win on his next move, and block them.
-	for i in range(0, 9):
+    for i in range(0, 9):
         copy = deepcopy(state)
         if copy[i] == ' ':
             copy[i] = other
