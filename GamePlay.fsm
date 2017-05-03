@@ -68,9 +68,9 @@ class PlanMove(StateNode):
     def start(self,event=None):
         
         est_board = self.parent.est_board
-        player = self.parent.player
-        self.parent.move_made = nextMove(est_board,player) #isWinner, isTied, or tile 0-8
-        
+        player    = self.parent.player
+        level     = self.parent.level
+        self.parent.move_made = nextMove(est_board,player,level) #isWinner, isTied, or tile 0-8
 
         if type(self.parent.move_made)==int: #check game not over
             #want to get next chip pos 
@@ -183,15 +183,16 @@ class AwaitMessage(StateNode):
 class GamePlay(StateMachineProgram):
     
     def __init__(self):
-        print("POSEEEEEEEE : ", cozmo.util.Pose(0,0,0,angle_z=cozmo.util.radians(0)))
+        
         self.player = 'X' # 'O;
         self.other  =  'O' # 'X'
+        self.level  = 70 
         if self.player == 'X':
             self.server = CozmoServer.Server().startServer() #this will print out the IP Address to connect to
             self.client = CozmoClient.Client().startClient() #this will connect to local server
         else:
             global ip 
-            self.client = CozmoClient.Client().startClient(ipaddr=ip)
+            self.client = CozmoClient.Client().startClient()
 
         self.move_made = -1 # whihc tile to place chip in 
         self.move_recieved = -1
@@ -215,17 +216,19 @@ class GamePlay(StateMachineProgram):
                                                 CustomObjectMarkers.Triangles2,
                                                 CustomObjectMarkers.Circles3,
                                                 CustomObjectMarkers.Diamonds3,
-                                                40,40,0.1,40,40,True)
+                                                50,50,50,40,40,True)
 
-        corner2 = robot.world.define_custom_box(CustomObjectTypes.CustomType11,
-                                                CustomObjectMarkers.Hexagons3,
-                                                CustomObjectMarkers.Triangles3,
-                                                CustomObjectMarkers.Hexagons2,
-                                                CustomObjectMarkers.Diamonds4,
-                                                CustomObjectMarkers.Hexagons4,
-                                                CustomObjectMarkers.Triangles4,
-                                                40,40,0.1,40,40,True)
+        #corner2 = robot.world.define_custom_box(CustomObjectTypes.CustomType11,
+        #                                        CustomObjectMarkers.Hexagons3,
+        #                                        CustomObjectMarkers.Triangles3,
+        #                                        CustomObjectMarkers.Hexagons2,
+        #                                        CustomObjectMarkers.Diamonds4,
+        #                                        CustomObjectMarkers.Hexagons4,
+        #                                        CustomObjectMarkers.Triangles4,
+        #                                        40,40,0.1,40,40,True)
 
+        # self.pf = SLAMParticleFilter(robot, num_particles=100,
+        #                              landmark_test=SLAMSensorModel.is_aruco)
         super().__init__()
 
     $setup{
