@@ -1,6 +1,7 @@
 #GamePlay.fsm
 
 from cozmo_fsm import *
+from cozmo.util import *
 async def dummy(a):pass
 custom_objs.declare_objects = dummy 
 
@@ -14,17 +15,25 @@ import socket
 ip = socket.gethostbyname(socket.gethostname())
 
 class GoToStart(PilotToPose):
-    def __init__(self,pose=None):
+    def __init__(self,pose = Pose(0,0,0,angle_z= cozmo.util.radians(0))):
         super().__init__(pose)
-        if self.parent.chip != None: self.parent.chip.obstacle = True
-        if self.parent.player=='X':
-            x,y = self.parent.start1
-        else: 
-            x,y = self.parent.start2
-        self.target_pose=Pose(x,y,0,angle_z = cozmo.util.radians(self.parent.board_ori))
+        self.target_pose = pose
+
+    def start(self,event=None):
+        if self.parent != None:
+            if self.parent.chip != None: self.parent.chip.obstacle = True
+            if self.parent.player=='X':
+                x,y = self.parent.start1
+            else: 
+                x,y = self.parent.start2
+            self.target_pose= Pose(x,y,0,angle_z = cozmo.util.radians(self.parent.board_ori))
+            print("TARGET POSEEEEEEEEEEEEEEEEEEEEEEEEEE = ",self.target_pose)
+        else: print("parent is None")
+        super().start()
 
 class Initialize(StateNode):
     def start(self,event=None):
+        print("parent: ",self.parent)
         #get marker postion. precondition: first object in world map is the corner marker 
         mx = list(robot.world.world_map.objects)[0].pose.position.x
         my = list(robot.world.world_map.objects)[0].pose.position.y
@@ -57,9 +66,10 @@ class Initialize(StateNode):
 
 class PlanMove(StateNode):
     def start(self,event=None):
+        
         est_board = self.parent.est_board
         player = self.parent.player
-        self.parent.move_made = NextMove(est_board,player) #isWinner, isTied, or tile 0-8
+        self.parent.move_made = nextMove(est_board,player) #isWinner, isTied, or tile 0-8
         
 
         if type(self.parent.move_made)==int: #check game not over
@@ -171,7 +181,9 @@ class AwaitMessage(StateNode):
         self.post_completion()
 
 class GamePlay(StateMachineProgram):
-    def start(self):
+    
+    def __init__(self):
+        print("POSEEEEEEEE : ", cozmo.util.Pose(0,0,0,angle_z=cozmo.util.radians(0)))
         self.player = 'X' # 'O;
         self.other  =  'O' # 'X'
         if self.player == 'X':
@@ -199,35 +211,35 @@ class GamePlay(StateMachineProgram):
         corner1 = robot.world.define_custom_box(CustomObjectTypes.CustomType10,
                                                 CustomObjectMarkers.Circles2,
                                                 CustomObjectMarkers.Diamonds2,
-                                                CustomObjectMarkers.Hexagons2,
+                                                CustomObjectMarkers.Circles4,
                                                 CustomObjectMarkers.Triangles2,
                                                 CustomObjectMarkers.Circles3,
                                                 CustomObjectMarkers.Diamonds3,
-                                                40,40,0,1,40,40)
+                                                40,40,0.1,40,40,True)
 
         corner2 = robot.world.define_custom_box(CustomObjectTypes.CustomType11,
                                                 CustomObjectMarkers.Hexagons3,
                                                 CustomObjectMarkers.Triangles3,
-                                                CustomObjectMarkers.Circles4,
+                                                CustomObjectMarkers.Hexagons2,
                                                 CustomObjectMarkers.Diamonds4,
                                                 CustomObjectMarkers.Hexagons4,
                                                 CustomObjectMarkers.Triangles4,
-                                                40,40,0,1,40,40)
+                                                40,40,0.1,40,40,True)
 
-        super().start()
+        super().__init__()
 
     def setup(self):
         """
     
             start: StateNode() =T(1)=> Initialize() 
-                               =C=> Say("Done")#GoToStart() 
-            #                  =C=> plan: PlanMove()
-            # plan =D(int)=> move
+                               =C=> GoToStart() 
+                               =C=> plan: PlanMove()
+            plan =D(int)=> move
             # #never happens - plan =D('X')=> SendMessage(-1,"all")=C=>#yay
             # plan =D('O')=> SendMessage(-1,"all")=C=>#nay
             # plan =D('XO')=> SendMessage(-1,"all")=C=>#meh
     
-            # move: PickUpChip() =C=> Forward(100) 
+            move: PickUpChip() =C=> Say("Done")#Forward(100) 
             #                  =CNext=> PlaceChip()
             #                  =C=> GoToStart() 
             #                  =C=> tellr2
@@ -241,17 +253,29 @@ class GamePlay(StateMachineProgram):
     
         """
         
-        # Code generated by genfsm on Mon May  1 16:41:09 2017:
+        # Code generated by genfsm on Tue May  2 23:19:52 2017:
         
         start = StateNode() .set_name("start") .set_parent(self)
         initialize1 = Initialize() .set_name("initialize1") .set_parent(self)
+        gotostart1 = GoToStart() .set_name("gotostart1") .set_parent(self)
+        plan = PlanMove() .set_name("plan") .set_parent(self)
+        move = PickUpChip() .set_name("move") .set_parent(self)
         say1 = Say("Done") .set_name("say1") .set_parent(self)
         
         timertrans1 = TimerTrans(1) .set_name("timertrans1")
         timertrans1 .add_sources(start) .add_destinations(initialize1)
         
         completiontrans1 = CompletionTrans() .set_name("completiontrans1")
-        completiontrans1 .add_sources(initialize1) .add_destinations(say1)
+        completiontrans1 .add_sources(initialize1) .add_destinations(gotostart1)
+        
+        completiontrans2 = CompletionTrans() .set_name("completiontrans2")
+        completiontrans2 .add_sources(gotostart1) .add_destinations(plan)
+        
+        datatrans1 = DataTrans(int) .set_name("datatrans1")
+        datatrans1 .add_sources(plan) .add_destinations(move)
+        
+        completiontrans3 = CompletionTrans() .set_name("completiontrans3")
+        completiontrans3 .add_sources(move) .add_destinations(say1)
         
         return self
 
