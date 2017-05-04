@@ -18,7 +18,8 @@ def isWinner(state,player):
 
 
 def isTied(state):
-    board_full = len([x for x in corners if board[x]== ' '])
+    board_full = not bool(len([x for x in range(0,9) if state[x] == ' ']))
+    
     return board_full and (not isWinner(state, "X") or not isWinner(state,"O"))
 
 # Here is our algorithm for our Tic Tac Toe AI:
@@ -28,7 +29,7 @@ def move(state,player,level=100):
     if player == 'X': other = 'O'
     else: other = 'X'
     # will make a random move (100-level)% of the times
-    r = random.randint(100)
+    r = random.randint(0,100)
     if r <= level: # smart move 
         # First, check if we can win in the next move
         for i in range(0, 9):
@@ -48,22 +49,22 @@ def move(state,player,level=100):
 
         # Try to take one of the corners, if they are free.
         corners = [0, 2, 6, 8]
-        free_corners = [x for x in corners if board[x] == ' ']
+        free_corners = [x for x in corners if state[x] == ' ']
         move = random.choice(free_corners)
 
         if move != None:
             return move
 
         # Try to take the center, if it is free.
-        if board[4] == ' ':
+        if state[4] == ' ':
             return 4 
 
         # Move on one of the sides.
         sides = [1,3,5,7]
-        free_sides = [x for x in sides if board[x] == ' ']
+        free_sides = [x for x in sides if state[x] == ' ']
         return random.choice(free_sides)
     else: #dumb, random move 
-        free_sides = [x for x in range(0,9) if board[x] == ' ']
+        free_sides = [x for x in range(0,9) if state[x] == ' ']
         return random.choice(free_sides)
 
 def nextMove(state,player,level):

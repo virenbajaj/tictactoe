@@ -14,22 +14,7 @@ import sys
 import socket
 ip = socket.gethostbyname(socket.gethostname())
 
-class GoToStart(PilotToPose):
-    def __init__(self,pose = Pose(0,0,0,angle_z= cozmo.util.radians(0))):
-        super().__init__(pose)
-        self.target_pose = pose
 
-    def start(self,event=None):
-        if self.parent != None:
-            if self.parent.chip != None: self.parent.chip.obstacle = True
-            if self.parent.player=='X':
-                x,y = self.parent.start1
-            else: 
-                x,y = self.parent.start2
-            self.target_pose= Pose(x,y,0,angle_z = cozmo.util.radians(self.parent.board_ori))
-            print("TARGET POSEEEEEEEEEEEEEEEEEEEEEEEEEE = ",self.target_pose)
-        else: print("parent is None")
-        super().start()
 
 class Initialize(StateNode):
     def start(self,event=None):
@@ -37,7 +22,7 @@ class Initialize(StateNode):
         #get marker postion. precondition: first object in world map is the corner marker 
         mx = list(robot.world.world_map.objects)[0].pose.position.x
         my = list(robot.world.world_map.objects)[0].pose.position.y
-        mq = list(robot.world.world_map.objects)[0].pose.rotation.angle_z.radians
+        mq = wrap_angle(list(robot.world.world_map.objects)[0].pose.rotation.angle_z.radians)
         typ = list(robot.world.world_map.objects)[0].object_type
         if typ == CustomObjectTypes.CustomType10: corner = 1
         else: corner = 3
@@ -66,18 +51,18 @@ class Initialize(StateNode):
 
 class PlanMove(StateNode):
     def start(self,event=None):
-        
+        super().start()
+        print('start plan move')
         est_board = self.parent.est_board
         player    = self.parent.player
         level     = self.parent.level
         self.parent.move_made = nextMove(est_board,player,level) #isWinner, isTied, or tile 0-8
-        
 
         if type(self.parent.move_made)==int: #check game not over
             #want to get next chip pos 
             if player == 'X':
                 chip_number = self.parent.move_count # will be max 5 
-                chip_pos    = xpickup_pos[chip_number]
+                #chip_pos    = self.parent.xpick[chip_number]
                 self.parent.chip = robot.world.world_map.objects[1000+chip_number]
                 self.parent.chip.obstacle = False
                 self.parent.chip.x = self.parent.map_board[self.parent.move_made][0]
@@ -85,7 +70,7 @@ class PlanMove(StateNode):
             else:
                 #player = 'O'
                 chip_number = self.parent.move_count # will be max 4
-                chip_pos    = opickup_pos[chip_number]
+                #chip_pos    = self.parent.opick[chip_number]
                 self.parent.chip = robot.world.world_map.objects[1005+chip_number]
                 self.parent.chip.obstacle = False
                 self.parent.chip.x = self.parent.map_board[self.parent.move_made][0]
@@ -93,6 +78,8 @@ class PlanMove(StateNode):
 
             self.parent.est_board[self.parent.move_made] = player
             self.parent.move_count += 1
+            print(self.parent.move_made)
+            self.post_completion()
         
         else:
             #game is over because next move is a str
@@ -109,24 +96,49 @@ class PlanMove(StateNode):
                 self.post_data("XO")
             
         #go and pick up 
+class GoToStart(PilotToPose):
+    def __init__(self,pose = Pose(0,0,0,angle_z= cozmo.util.radians(0))):
+        super().__init__(pose)
+        self.target_pose = pose
 
+    def start(self,event=None):
+        if self.parent != None:
+            if self.parent.chip != None: self.parent.chip.obstacle = True
+            if self.parent.player=='X':
+                x,y = self.parent.start1
+            else: 
+                x,y = self.parent.start2
+            self.target_pose= Pose(x,y,0,angle_z=cozmo.util.radians(math.nan))
+            print("TARGET POSEEEEEEEEEEEEEEEEEEEEEEEEEE = ",self.target_pose)
+        else: print("parent is None")
+        super().start()
 
 class PickUpChip(PilotToPose):
-    def __init__(self,pose=None):
+    def __init__(self,pose=Pose(0,0,0,angle_z= cozmo.util.radians(0))):
         super().__init__(pose)
+        self.target_pose = pose
 
-    def start(self,event):
-        x,y = event.data 
+    def start(self,event=None):
+        print('yoooo')
+        if self.parent.player == 'X':
+            x,y = self.parent.xpick[0]
+        else:
+            x,y = self.parent.opick[self.parent.move_count-1]
         q = self.parent.board_ori
         self.target_pose = Pose(x,y,0,angle_z = cozmo.util.radians(math.pi - q))
         super().start(event)
 
         
 class PlaceChip(PilotPushToPose):
-    def __init__(self,event=None):
+    def __init__(self,pose=Pose(0,0,0,angle_z= cozmo.util.radians(0))):
+        super().__init__(pose)
+        self.target_pose = pose
+
+    def start(self,event=None):
         if type(self.parent.move_made)==int: #check if game not over
             x,y = self.parent.map_board[self.parent.move_made]
-        super().__init__(Pose(x,y,0))
+            self.target_pose = Pose(x,y,0)
+        super().start()
 
 
 class SendMessage(StateNode):
@@ -193,7 +205,7 @@ class GamePlay(StateMachineProgram):
             self.client = CozmoClient.Client().startClient() #this will connect to local server
         else:
             global ip 
-            self.client = CozmoClient.Client().startClient(ipaddr=ip)
+            self.client = CozmoClient.Client().startClient()
 
         self.move_made = -1 # whihc tile to place chip in 
         self.move_recieved = -1
@@ -213,11 +225,11 @@ class GamePlay(StateMachineProgram):
         corner1 = robot.world.define_custom_box(CustomObjectTypes.CustomType10,
                                                 CustomObjectMarkers.Circles2,
                                                 CustomObjectMarkers.Diamonds2,
-                                                CustomObjectMarkers.Circles4,
+                                                CustomObjectMarkers.Diamonds3,
                                                 CustomObjectMarkers.Triangles2,
                                                 CustomObjectMarkers.Circles3,
-                                                CustomObjectMarkers.Diamonds3,
-                                                50,50,50,40,40,True)
+                                                CustomObjectMarkers.Circles4,
+                                                40,40,0.1,40,40,True)
 
         #corner2 = robot.world.define_custom_box(CustomObjectTypes.CustomType11,
         #                                        CustomObjectMarkers.Hexagons3,
@@ -235,13 +247,13 @@ class GamePlay(StateMachineProgram):
     def setup(self):
         """
     
-            start: StateNode() =T(1)=> Initialize() 
+            start: SetHeadAngle(-25) =C=> StateNode() =T(1)=> Initialize() 
                                =C=> GoToStart() 
-                               =C=> plan: PlanMove()
-            plan =D(int)=> move
+                               =C=> plan: PlanMove() #PickUpChip() =C=> Say('done')
+            plan =C=> move
             # #never happens - plan =D('X')=> SendMessage(-1,"all")=C=>#yay
-            # plan =D('O')=> SendMessage(-1,"all")=C=>#nay
-            # plan =D('XO')=> SendMessage(-1,"all")=C=>#meh
+            #plan =D('O')=> SendMessage(-1,"all")=C=>#nay
+            #plan =D('XO')=> SendMessage(-1,"all")=C=>#meh
     
             move: PickUpChip() =C=> Say("Done")#Forward(100) 
             #                  =CNext=> PlaceChip()
@@ -257,29 +269,33 @@ class GamePlay(StateMachineProgram):
     
         """
         
-        # Code generated by genfsm on Wed May  3 16:17:26 2017:
+        # Code generated by genfsm on Wed May  3 22:46:04 2017:
         
-        start = StateNode() .set_name("start") .set_parent(self)
+        start = SetHeadAngle(-25) .set_name("start") .set_parent(self)
+        statenode1 = StateNode() .set_name("statenode1") .set_parent(self)
         initialize1 = Initialize() .set_name("initialize1") .set_parent(self)
         gotostart1 = GoToStart() .set_name("gotostart1") .set_parent(self)
         plan = PlanMove() .set_name("plan") .set_parent(self)
         move = PickUpChip() .set_name("move") .set_parent(self)
         say1 = Say("Done") .set_name("say1") .set_parent(self)
         
-        timertrans1 = TimerTrans(1) .set_name("timertrans1")
-        timertrans1 .add_sources(start) .add_destinations(initialize1)
-        
         completiontrans1 = CompletionTrans() .set_name("completiontrans1")
-        completiontrans1 .add_sources(initialize1) .add_destinations(gotostart1)
+        completiontrans1 .add_sources(start) .add_destinations(statenode1)
+        
+        timertrans1 = TimerTrans(1) .set_name("timertrans1")
+        timertrans1 .add_sources(statenode1) .add_destinations(initialize1)
         
         completiontrans2 = CompletionTrans() .set_name("completiontrans2")
-        completiontrans2 .add_sources(gotostart1) .add_destinations(plan)
-        
-        datatrans1 = DataTrans(int) .set_name("datatrans1")
-        datatrans1 .add_sources(plan) .add_destinations(move)
+        completiontrans2 .add_sources(initialize1) .add_destinations(gotostart1)
         
         completiontrans3 = CompletionTrans() .set_name("completiontrans3")
-        completiontrans3 .add_sources(move) .add_destinations(say1)
+        completiontrans3 .add_sources(gotostart1) .add_destinations(plan)
+        
+        completiontrans4 = CompletionTrans() .set_name("completiontrans4")
+        completiontrans4 .add_sources(plan) .add_destinations(move)
+        
+        completiontrans5 = CompletionTrans() .set_name("completiontrans5")
+        completiontrans5 .add_sources(move) .add_destinations(say1)
         
         return self
 
