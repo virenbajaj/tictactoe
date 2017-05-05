@@ -337,7 +337,7 @@ class GamePlayX(StateMachineProgram):
         
         tellr2: SendMessage(-1,"all") =C=> wait: AwaitMessage()
         =F=> StateNode() =T(0.2)=> wait 
-        wait =C=> Say("new move")
+        wait =C=> plan
         wait =D('X')=>Say("yay")
         wait =D('0')=> Say("dead")
         wait =D('XO')=> Say("meh")
