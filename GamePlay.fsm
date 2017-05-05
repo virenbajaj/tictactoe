@@ -15,7 +15,6 @@ import socket
 ip = socket.gethostbyname(socket.gethostname())
 
 
-
 class Initialize(StateNode):
     def start(self,event=None):
         print("parent: ",self.parent)
@@ -28,8 +27,9 @@ class Initialize(StateNode):
         else: corner = 3
 
         #(board_pose,xchips_pos,ochips_pos,start1,start2) = MakeMap(corner,(x,y,q))
-        self.parent.board_ori = mq
-        self.parent.map_board = MapBoard(corner,mx,my,mq)
+        if corner == 1: self.parent.board_ori = mq
+        else: self.parent.board_ori = mq + math.pi
+        self.parent.map_board,self.parent.place_board = MapBoard(corner,mx,my,mq)
         self.parent.xpos,self.parent.xpick = MapXChips(corner,mx,my,mq)
         self.parent.opos,self.parent.opick = MapOChips(corner,mx,my,mq)
         self.parent.start1,self.parent.start2 = MapStart(corner,mx,my,mq)
@@ -55,7 +55,8 @@ class PlanMove(StateNode):
         est_board = self.parent.est_board
         player    = self.parent.player
         level     = self.parent.level
-        self.parent.move_made = nextMove(est_board,player,level) #isWinner, isTied, or tile 0-8
+        self.parent.move_made = 6
+        #nextMove(est_board,player,level) #isWinner, isTied, or tile 0-8
 
         if type(self.parent.move_made)==int: #check game not over
             #want to get next chip pos 
@@ -93,7 +94,8 @@ class PlanMove(StateNode):
             elif self.parent.move_made == "XO":
                 print("game over: TIED")
                 self.post_data("XO")
-            
+
+
         #go and pick up 
 class GoToStart(PilotToPose):
     def __init__(self,pose = Pose(0,0,0,angle_z=cozmo.util.radians(0))):
@@ -112,6 +114,7 @@ class GoToStart(PilotToPose):
         else: print("parent is None")
         super().start()
 
+
 class PickUpChip(PilotToPose):
     def __init__(self,pose=Pose(0,0,0,angle_z= cozmo.util.radians(0))):
         super().__init__(pose)
@@ -125,7 +128,7 @@ class PickUpChip(PilotToPose):
             x,y = self.parent.opick[self.parent.move_count-1]
         q = self.parent.board_ori
 
-        self.target_pose = Pose(x,y,0,angle_z = cozmo.util.radians(math.pi/2+ q))
+        self.target_pose = Pose(x,y,0,angle_z = cozmo.util.radians(math.pi/2+q))
         super().start(event)
 
         
@@ -136,14 +139,25 @@ class PlaceChip(PilotPushToPose):
 
     def start(self,event=None):
         if type(self.parent.move_made)==int: #check if game not over
-            x,y = self.parent.map_board[self.parent.move_made]
+            x,y = self.parent.place_board[self.parent.move_made]
             self.target_pose = Pose(x,y,0,angle_z=cozmo.util.radians(math.nan))
         super().start()
 
 
+class UpdateChip(StateNode):
+    def start(self,event=None):
+        super().start()
+        q = robot.world.particle_filter.pose[2]
+        theta = wrap_angle(self.parent.board_ori-q)
+        self.parent.chip.x = self.parent.chip.x - 35*cos(theta)
+        self.parent.chip.y = self.parent.chip.y - 35*sin(theta)
+        self.parent.chip_angle = theta
+        self.post_completion()
+
+
 class SendMessage(StateNode):
-    def __init__(self,msg,recipients=[],client=None):
-        self.msg = self.parent.move_made # disregard placeholder -1 
+    def __init__(self,msg=-1,recipients=[],client=None):
+        self.msg = msg # disregard placeholder -1 
         self.recipients = recipients
         self.client = client
         super().__init__()
@@ -152,6 +166,10 @@ class SendMessage(StateNode):
         if self.running: return
         super().start(event)
         if self.client is None: self.client = self.parent.client
+        if type(self.parent.move_made) == int:
+            self.msg = (self.parent.move_made,self.parent.chip_angle)
+        else:
+            self.msg = self.parent.move_made
         self.client.sendMessage(self.msg,sendTo=self.recipients)
         self.post_completion()
 
@@ -181,20 +199,25 @@ class AwaitMessage(StateNode):
             self.post_data("XO")
         else:
             #msg has the tile other guy moved to
-            m = self.parent.move_recieved = msgObject["message"]
+            m,chip_angle_rec =  msgObject["message"]
+            self.parent.move_recieved = m 
             self.parent.est_board[self.parent.move_recieved] = self.parent.other
             if self.parent.player == 'X':
                 chip = robot.world.world_map.objects[1005+self.parent.move_count-1]
                 chip.x,chip.y = self.parent.map_board[m]
+                chip.x += 35*cos(chip_angle_rec)
+                chip.y += 35*sin(chip_angle_rec)
             else:
                 chip = robot.world.world_map.objects[1000+self.parent.move_count]
                 chip.x,chip.y = self.parent.map_board[m]
+                chip.x += 35*cos(chip_angle_rec)
+                chip.y += 35*sin(chip_angle_rec)
 
         #self.post_data(msgObject["message"])
         self.post_completion()
 
-class GamePlay(StateMachineProgram):
-    
+
+class GamePlay(StateMachineProgram): 
     def __init__(self):
         
         self.player = 'X' # 'O;
@@ -212,6 +235,7 @@ class GamePlay(StateMachineProgram):
         self.move_count = 0
         self.est_board = [' ']*9
         self.map_board = []
+        self.place_board = []
         self.xpos = []
         self.xpick = []
         self.opos = []
@@ -220,7 +244,7 @@ class GamePlay(StateMachineProgram):
         self.start2 = (-1,-1)
         self.board_ori = 0
         self.chip = None
-
+        self.chip_angle = 0
 
         corner1 = robot.world.define_custom_box(CustomObjectTypes.CustomType10,
                                                 CustomObjectMarkers.Circles2,
@@ -255,10 +279,9 @@ class GamePlay(StateMachineProgram):
         #plan =D('XO')=> SendMessage(-1,"all")=C=>#meh
 
         move: PickUpChip() =C=> Forward(100) 
-                           =CNext=> PlaceChip()
+                           =CNext=> PlaceChip() =C=> UpdateChip()
                            =C=> Forward(-50)
                            =CNext=> GoToStart() =C=> Say('Done')
-        #                  =C=> tellr2
         
         # tellr2: SendMessage(-1,"all") =C=> wait: AwaitMessage("all") 
         # wait =C=> plan
