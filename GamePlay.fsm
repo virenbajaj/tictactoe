@@ -35,7 +35,6 @@ class Initialize(StateNode):
         self.parent.start1,self.parent.start2 = MapStart(corner,mx,my,mq)
         
         #add chips to world map
-        temp_obs = []
         for i in range(0,5):
             x,y = self.parent.xpos[i]
             chid = 1000+i #1000 is where Dave starts in the example code in piazza post
@@ -97,7 +96,7 @@ class PlanMove(StateNode):
             
         #go and pick up 
 class GoToStart(PilotToPose):
-    def __init__(self,pose = Pose(0,0,0,angle_z= cozmo.util.radians(0))):
+    def __init__(self,pose = Pose(0,0,0,angle_z=cozmo.util.radians(0))):
         super().__init__(pose)
         self.target_pose = pose
 
@@ -108,7 +107,7 @@ class GoToStart(PilotToPose):
                 x,y = self.parent.start1
             else: 
                 x,y = self.parent.start2
-            self.target_pose= Pose(x,y,0,angle_z=cozmo.util.radians(math.nan))
+            self.target_pose= Pose(x,y,0,angle_z=cozmo.util.radians(self.parent.board_ori))
             print("TARGET POSEEEEEEEEEEEEEEEEEEEEEEEEEE = ",self.target_pose)
         else: print("parent is None")
         super().start()
@@ -125,7 +124,8 @@ class PickUpChip(PilotToPose):
         else:
             x,y = self.parent.opick[self.parent.move_count-1]
         q = self.parent.board_ori
-        self.target_pose = Pose(x,y,0,angle_z = cozmo.util.radians(math.pi - q))
+
+        self.target_pose = Pose(x,y,0,angle_z = cozmo.util.radians(math.pi/2+ q))
         super().start(event)
 
         
@@ -137,7 +137,7 @@ class PlaceChip(PilotPushToPose):
     def start(self,event=None):
         if type(self.parent.move_made)==int: #check if game not over
             x,y = self.parent.map_board[self.parent.move_made]
-            self.target_pose = Pose(x,y,0)
+            self.target_pose = Pose(x,y,0,angle_z=cozmo.util.radians(math.nan))
         super().start()
 
 
@@ -242,7 +242,7 @@ class GamePlay(StateMachineProgram):
 
         # self.pf = SLAMParticleFilter(robot, num_particles=100,
         #                              landmark_test=SLAMSensorModel.is_aruco)
-        super().__init__()
+        super().__init__(worldmap_viewer = True)
 
     $setup{
 
@@ -254,9 +254,10 @@ class GamePlay(StateMachineProgram):
         #plan =D('O')=> SendMessage(-1,"all")=C=>#nay
         #plan =D('XO')=> SendMessage(-1,"all")=C=>#meh
 
-        move: PickUpChip() =C=> Say("Done")#Forward(100) 
-        #                  =CNext=> PlaceChip()
-        #                  =C=> GoToStart() 
+        move: PickUpChip() =C=> Forward(100) 
+                           =CNext=> PlaceChip()
+                           =C=> Forward(-50)
+                           =CNext=> GoToStart() =C=> Say('Done')
         #                  =C=> tellr2
         
         # tellr2: SendMessage(-1,"all") =C=> wait: AwaitMessage("all") 

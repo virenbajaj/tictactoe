@@ -6,7 +6,7 @@ def rotate(x,y,dx,dy,q):
     return (x+dx*cos(q)-dy*sin(q),y+dx*sin(q)+dy*cos(q))
 
 def MapXChips(corner,x,y,q):
-    l = 100 # box length
+    l = 200 # box length
     m = 40  # marker length
     cozmo_width = 70 #mm
     
@@ -19,34 +19,34 @@ def MapXChips(corner,x,y,q):
     gap = cozmo_width*1.25 #between chips
     
     if corner == 1:
-        xchips_pos = [rotate(x,y,gap,-100,q),
-                      rotate(x,y,2*gap,-100,q),
-                      rotate(x,y,3*gap,-100,q),
-                      rotate(x,y,4*gap,-100,q),
-                      rotate(x,y,5*gap,-100,q)]
-        xpickup_pos = [rotate(x,y,gap,-200,q),
-                       rotate(x,y,2*gap,-200,q),
-                       rotate(x,y,3*gap,-200,q),
-                       rotate(x,y,4*gap,-200,q),
-                       rotate(x,y,5*gap,-200,q)]
+        xchips_pos  = [rotate(x,y,m+  gap,-m/2-100,q),
+                       rotate(x,y,m+2*gap,-m/2-100,q),
+                       rotate(x,y,m+3*gap,-m/2-100,q),
+                       rotate(x,y,m+4*gap,-m/2-100,q),
+                       rotate(x,y,m+5*gap,-m/2-100,q)]
+        xpickup_pos = [rotate(x,y,m+  gap,-m/2-200,q),
+                       rotate(x,y,m+2*gap,-m/2-200,q),
+                       rotate(x,y,m+3*gap,-m/2-200,q),
+                       rotate(x,y,m+4*gap,-m/2-200,q),
+                       rotate(x,y,m+5*gap,-m/2-200,q)]
     if corner == 3:
-        xchips_pos = [rotate(x,y,x4-gap,y4+100,q),
-                      rotate(x,y,x4-2*gap,y4+100,q),
-                      rotate(x,y,x4-3*gap,y4+100,q),
-                      rotate(x,y,x4-4*gap,y4+100,q),
-                      rotate(x,y,x4-5*gap,y4+100,q)]
+        xchips_pos  = [rotate(x,y,x4-m/2-  gap,y4+y1,q),
+                       rotate(x,y,x4-m/2-2*gap,y4+y1,q),
+                       rotate(x,y,x4-m/2-3*gap,y4+y1,q),
+                       rotate(x,y,x4-m/2-4*gap,y4+y1,q),
+                       rotate(x,y,x4-m/2-5*gap,y4+y1,q)]
 
-        xpickup_pos = [rotate(x,y,x4-gap,y4+200,q),
-                       rotate(x,y,x4-2*gap,y4+200,q),
-                       rotate(x,y,x4-3*gap,y4+200,q),
-                       rotate(x,y,x4-4*gap,y4+200,q),
-                       rotate(x,y,x4-5*gap,y4+200,q)]
+        xpickup_pos = [rotate(x,y,x4-m/2-  gap,y4+y2,q),
+                       rotate(x,y,x4-m/2-2*gap,y4+y2,q),
+                       rotate(x,y,x4-m/2-3*gap,y4+y2,q),
+                       rotate(x,y,x4-m/2-4*gap,y4+y2,q),
+                       rotate(x,y,x4-m/2-5*gap,y4+y2,q)]
     return (xchips_pos,xpickup_pos)
     
 def MapOChips(corner,x,y,q):
-    l = 100 # box length
+    l = 200 # box length
     m = 40  # marker length
-    cozmo_width = 100 #mm
+    cozmo_width = 70 #mm
     #start_diff = 150 #distance used to get start position
     
     #x,y,q = pose #x and y are the position of the markers
@@ -61,36 +61,39 @@ def MapOChips(corner,x,y,q):
     gap = cozmo_width*1.25 #between chips
     
     if corner == 1:
-        ochips_pos = [rotate(x,y,x4-gap,y4+100,q),
-                      rotate(x,y,x4-2*gap,y4+100,q),
-                      rotate(x,y,x4-3*gap,y4+100,q),
-                      rotate(x,y,x4-4*gap,y4+100,q)]
-        
-        opickup_pos = [rotate(x,y,x4-gap,y4+200,q),
-                      rotate(x,y,x4-2*gap,y4+200,q),
-                      rotate(x,y,x4-3*gap,y4+200,q),
-                      rotate(x,y,x4-4*gap,y4+200,q)]
+        ochips_pos  = [rotate(x,y,x4-m/2-  gap,y4+y1,q),
+                       rotate(x,y,x4-m/2-2*gap,y4+y1,q),
+                       rotate(x,y,x4-m/2-3*gap,y4+y1,q),
+                       rotate(x,y,x4-m/2-4*gap,y4+y1,q),
+                       rotate(x,y,x4-m/2-5*gap,y4+y1,q)]
+
+        opickup_pos = [rotate(x,y,x4-m/2-  gap,y4+y2,q),
+                       rotate(x,y,x4-m/2-2*gap,y4+y2,q),
+                       rotate(x,y,x4-m/2-3*gap,y4+y2,q),
+                       rotate(x,y,x4-m/2-4*gap,y4+y2,q),
+                       rotate(x,y,x4-m/2-5*gap,y4+y2,q)]
     if corner == 3:
-        ochips_pos = [rotate(x,y,gap,-100,q),
-                      rotate(x,y,2*gap,-100,q),
-                      rotate(x,y,3*gap,-100,q),
-                      rotate(x,y,4*gap,-100,q)]
-        opickup_pos = [rotate(x,y,gap,-200,q),
-                      rotate(x,y,2*gap,-200,q),
-                      rotate(x,y,3*gap,-200,q),
-                      rotate(x,y,4*gap,-200,q)]
+        ochips_pos  = [rotate(x,y,x4-m/2-  gap,y4+y1,q),
+                       rotate(x,y,x4-m/2-2*gap,y4+y1,q),
+                       rotate(x,y,x4-m/2-3*gap,y4+y1,q),
+                       rotate(x,y,x4-m/2-4*gap,y4+y1,q)]
+
+        opickup_pos = [rotate(x,y,x4-m/2-  gap,y4+y2,q),
+                       rotate(x,y,x4-m/2-2*gap,y4+y2,q),
+                       rotate(x,y,x4-m/2-3*gap,y4+y2,q),
+                       rotate(x,y,x4-m/2-4*gap,y4+y2,q)]
     return (ochips_pos,opickup_pos)
 
 
 def MapStart(corner,x,y,q):
-    l = 100 # box length
+    l = 200 # box length
     m = 40  # marker length
     start_diff = 150 #distance used to get start position
     
     x4 = y4 = (m+3*l) #other marker
     
     if corner == 1:
-        start1 = rotate(x,y,-start_diff,-0,q)
+        start1 = rotate(x,y,-start_diff,-start_diff,q)
         start2 = rotate(x,y,x4+start_diff,y4+start_diff,q)
     if corner == 3:
         start2 = rotate(x,y,-start_diff,-start_diff,q)
@@ -127,30 +130,6 @@ def MapBoard(corner,x,y,q):
         p31 = rotate(x,y,x1,y1,q) #(x+x1*cos(q)+y1*sin(q),y-x1*sin(q)+y1*cos(q))
         p32 = rotate(x,y,x2,y1,q) #(x+x2*cos(q)+y1*sin(q),y-x2*sin(q)+y1*cos(q))
         p33 = rotate(x,y,x3,y1,q) #(x+x3*cos(q)+y1*sin(q),y-x3*sin(q)+y1*cos(q))
-
-        xchips_pos = [rotate(x,y,gap,-y1,q),
-                      rotate(x,y,2*gap,-y1,q),
-                      rotate(x,y,3*gap,-y1,q),
-                      rotate(x,y,4*gap,-y1,q),
-                      rotate(x,y,5*gap,-y1,q)]
-        xpickup_pos = [rotate(x,y,gap,-y2,q),
-                       rotate(x,y,2*gap,-y2,q),
-                       rotate(x,y,3*gap,-y2,q),
-                       rotate(x,y,4*gap,-y2,q),
-                       rotate(x,y,5*gap,-y2,q)]
-
-        ochips_pos = [rotate(x,y,x4-gap,y4+y1,q),
-                      rotate(x,y,x4-2*gap,y4+y1,q),
-                      rotate(x,y,x4-3*gap,y4+y1,q),
-                      rotate(x,y,x4-4*gap,y4+y1,q)]
-        
-        opickup_pos = [rotate(x,y,x4-gap,y4+y2,q),
-                      rotate(x,y,x4-2*gap,y4+y2,q),
-                      rotate(x,y,x4-3*gap,y4+y2,q),
-                      rotate(x,y,x4-4*gap,y4+y2,q)]
-        
-        start1 = rotate(x,y,-start_diff,-start_diff,q)
-        start2 = rotate(x,y,x4+start_diff,y4+start_diff,q)
 
     # elif corner == 2:
     #     #bottom right
