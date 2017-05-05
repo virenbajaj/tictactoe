@@ -348,10 +348,10 @@ class GamePlayO(StateMachineProgram):
                            =C=> tellr2
         
         tellr2: SendMessage(-1,"all") =C=> wait
-        wait =C=> plan
-        wait =D('O')=> Say('Yay')
-        wait =D('X')=> Say('Crap')
-        wait =D('XO')=> Say('Oh well')
+        #wait =C=> plan
+        #wait =D('O')=> Say('Yay')
+        #wait =D('X')=> Say('Crap')
+        #wait =D('XO')=> Say('Oh well')
 
 
     }
