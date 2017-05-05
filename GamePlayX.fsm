@@ -55,8 +55,7 @@ class PlanMove(StateNode):
         est_board = self.parent.est_board
         player    = self.parent.player
         level     = self.parent.level
-        self.parent.move_made = 6 
-        #nextMove(est_board,player,level) #isWinner, isTied, or tile 0-8
+        self.parent.move_made = nextMove(est_board,player,level) #isWinner, isTied, or tile 0-8
 
         if type(self.parent.move_made)==int: #check game not over
             #want to get next chip pos 
