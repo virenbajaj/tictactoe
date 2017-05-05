@@ -1,0 +1,21 @@
+def overrideFunc(self,msgObj):
+  if self.parent.message is None:
+    self.parent.message = msgObj["message"]
+
+class AwaitMessage(StateNode):
+  def __init__(self):
+    super().__init__()
+    self.ready = False
+  def start(self,event=None):
+    if self.running: return
+    super().start(event)
+    if not self.ready:
+      self.parent.message = None
+      self.ready = True
+    else:
+      if self.parent.message is None:
+        self.post_failure()
+      else:
+        self.post_success()
+
+await: AwaitMessage =F=> StateNode() =T(0.2)=> await =S=> Blah

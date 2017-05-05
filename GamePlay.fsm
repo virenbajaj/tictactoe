@@ -139,7 +139,7 @@ class PlaceChip(PilotPushToPose):
 
     def start(self,event=None):
         if type(self.parent.move_made)==int: #check if game not over
-            x,y = self.parent.place_board[self.parent.move_made]
+            x,y = self.parent.map_board[self.parent.move_made]
             self.target_pose = Pose(x,y,0,angle_z=cozmo.util.radians(math.nan))
         super().start()
 
@@ -235,7 +235,7 @@ class GamePlay(StateMachineProgram):
         self.move_count = 0
         self.est_board = [' ']*9
         self.map_board = []
-        self.place_board = []
+        self.place_board = [] #
         self.xpos = []
         self.xpick = []
         self.opos = []

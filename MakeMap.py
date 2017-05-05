@@ -61,7 +61,7 @@ def MapOChips(corner,x,y,q):
     x4 = y4 = (m+3*l) #other marker
     gap = cozmo_width*1.25 #between chips
     
-    if corner == 1:
+    if corner == 3:
         ochips_pos  = [rotate(x,y,m+  gap,-m/2-100,q),
                        rotate(x,y,m+2*gap,-m/2-100,q),
                        rotate(x,y,m+3*gap,-m/2-100,q),
@@ -71,7 +71,7 @@ def MapOChips(corner,x,y,q):
                        rotate(x,y,m+2*gap,-m/2-200,q),
                        rotate(x,y,m+3*gap,-m/2-200,q),
                        rotate(x,y,m+4*gap,-m/2-200,q)]
-    if corner == 3:
+    if corner == 1:
         ochips_pos  = [rotate(x,y,x4-m-  gap,y4+m/2+100,q),
                        rotate(x,y,x4-m-2*gap,y4+m/2+100,q),
                        rotate(x,y,x4-m-3*gap,y4+m/2+100,q),
