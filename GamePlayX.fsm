@@ -336,7 +336,7 @@ class GamePlayX(StateMachineProgram):
         plan =D('O')=> SendMessage(-1,"all") 
              =C=> AnimationNode(anim_name='anim_cozmosays_badword_01')
         plan =D('XO')=> SendMessage(-1,"all") 
-             =C=> nimationNode(anim_name='anim_dizzy_reaction_medium_02')
+             =C=> AnimationNode(anim_name='anim_dizzy_reaction_medium_02')
     
         move: PickUpChip() =C=> Forward(100) 
                            =CNext=> PlaceChip() =C=> UpdateChip()

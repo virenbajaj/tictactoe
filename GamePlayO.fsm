@@ -272,9 +272,10 @@ class GamePlayO(StateMachineProgram):
         self.player = 'O' # 'X'
         self.other  =  'X' # 'O'
         self.level  = 70 
-        #global ip 
+    
+        # hard code IP address of computer cozmo X is connected to 
         self.client =\
-              CozmoClient.Client(mute=False).startClient(ipaddr="128.2.178.47")
+              CozmoClient.Client(mute=False).startClient(ipaddr="128.2.178.34")
 
         self.message = None
         self.client.processFunction = self.overrideFunc
