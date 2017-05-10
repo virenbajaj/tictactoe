@@ -1,4 +1,16 @@
-#GamePlay.fsm
+"""
+GamePlayO.fsm
+
+Viren Bajaj and Luka Jelenak
+
+In this file we have the FSM for the Cozmo that will play as the O player. 
+First the robot finds a custom object marker, and orients/maps out the board 
+and all the chips, then heads to start. He then waits for the X cozmo to 
+make his move until he get a message from cozmoX. He will then decide which
+move he will make and goes to pick up the first chip, places it in the correct
+box, then heads back to start and sends the other cozmo a message and 
+waits for his reply. While waiting cozmoX makes his move.
+"""
 
 from cozmo_fsm import *
 from cozmo.util import *
@@ -11,22 +23,25 @@ from GameEst import *
 import math
 import CozmoClient,CozmoServer
 import sys
-#import socket
-#ip = socket.gethostbyname(socket.gethostname())
 
 
+#This StateNode maps out board positions/chip positions/chip pickup positions once it
+#sees a custom object marker
 class Initialize(StateNode):
     def start(self,event=None):
+        if self.running: return
         print("parent: ",self.parent)
-        #get marker postion. precondition: first object in world map is the corner marker 
+        #get marker postion. 
+        #precondition: first object in world map is the corner marker 
         mx = list(robot.world.world_map.objects)[0].pose.position.x
         my = list(robot.world.world_map.objects)[0].pose.position.y
-        mq = wrap_angle(list(robot.world.world_map.objects)[0].pose.rotation.angle_z.radians)
+        mq = wrap_angle(
+          list(robot.world.world_map.objects)[0].pose.rotation.angle_z.radians)
         typ = list(robot.world.world_map.objects)[0].object_type
         if typ == CustomObjectTypes.CustomType10: corner = 1
         else: corner = 3
 
-        #(board_pose,xchips_pos,ochips_pos,start1,start2) = MakeMap(corner,(x,y,q))
+        #get board/chip/chip pickup/ and start positions
         if corner == 1: self.parent.board_ori = mq
         else: self.parent.board_ori = mq + math.pi
         self.parent.map_board,self.parent.place_board = MapBoard(corner,mx,my,mq)
@@ -37,7 +52,7 @@ class Initialize(StateNode):
         #add chips to world map
         for i in range(0,5):
             x,y = self.parent.xpos[i]
-            chid = 1000+i #1000 is where Dave starts in the example code in piazza post
+            chid = 1000+i #it starts on 1000 in piazza post
             robot.world.world_map.objects[chid] = ChipObj(chid,x,y)
         for i in range(0,4):
             x,y = self.parent.opos[i]
@@ -46,38 +61,46 @@ class Initialize(StateNode):
         
         super().start()
         self.post_completion()
-
-
+'''
+This node uses a tictactoe estimator based on the state of the game to choose
+which move would be the best next. Sends a completion event if the game is
+still in play and a data event if its over
+'''
 class PlanMove(StateNode):
     def start(self,event=None):
+        if self.running: return
         super().start()
         print('start plan move')
         est_board = self.parent.est_board
         player    = self.parent.player
         level     = self.parent.level
-        self.parent.move_made = nextMove(est_board,player,level) #isWinner, isTied, or tile 0-8
+        #isWinner, isTied, or tile 0-8
+        self.parent.move_made = nextMove(est_board,player,level) 
 
         if type(self.parent.move_made)==int: #check game not over
             #want to get next chip pos 
             if player == 'X':
                 chip_number = self.parent.move_count # will be max 5 
-                #chip_pos    = self.parent.xpick[chip_number]
-                self.parent.chip = robot.world.world_map.objects[1000+chip_number]
+                self.parent.chip =\
+                                robot.world.world_map.objects[1000+chip_number]
                 self.parent.chip.obstacle = False
-                self.parent.chip.x = self.parent.map_board[self.parent.move_made][0]
-                self.parent.chip.y = self.parent.map_board[self.parent.move_made][1]
+                self.parent.chip.x =\
+                                 self.parent.map_board[self.parent.move_made][0]
+                self.parent.chip.y =\
+                                 self.parent.map_board[self.parent.move_made][1]
             else:
                 #player = 'O'
                 chip_number = self.parent.move_count # will be max 4
-                #chip_pos    = self.parent.opick[chip_number]
-                self.parent.chip = robot.world.world_map.objects[1005+chip_number]
+                self.parent.chip =\
+                                 robot.world.world_map.objects[1005+chip_number]
                 self.parent.chip.obstacle = False
-                self.parent.chip.x = self.parent.map_board[self.parent.move_made][0]
-                self.parent.chip.y = self.parent.map_board[self.parent.move_made][1]
+                self.parent.chip.x =\
+                                 self.parent.map_board[self.parent.move_made][0]
+                self.parent.chip.y =\
+                                 self.parent.map_board[self.parent.move_made][1]
 
             self.parent.est_board[self.parent.move_made] = player
             self.parent.move_count += 1
-            print(self.parent.move_made)
             self.post_completion()
         
         else:
@@ -85,42 +108,42 @@ class PlanMove(StateNode):
             if self.parent.move_made == "X":
                 print("game over: X wins")
                 self.post_data("X")
-
-            elif self.parent.move_made == "O":
-                print("game over: O wins")
-                self.post_data("O")
-
+            # we dont check for if O wins because we get that info from X 
             elif self.parent.move_made == "XO":
                 print("game over: TIED")
                 self.post_data("XO")
 
-
-        #go and pick up 
+'''
+This node always makes cozmo go back to start after making his move,
+and if it is after making a move, cozmo will update the moved chip
+so that it is an obstacle again       
+'''
 class GoToStart(PilotToPose):
     def __init__(self,pose = Pose(0,0,0,angle_z=cozmo.util.radians(0))):
         super().__init__(pose)
         self.target_pose = pose
 
     def start(self,event=None):
-        if self.parent != None:
-            if self.parent.chip != None: self.parent.chip.obstacle = True
-            if self.parent.player=='X':
-                x,y = self.parent.start1
-            else: 
-                x,y = self.parent.start2
-            self.target_pose= Pose(x,y,0,angle_z=cozmo.util.radians(self.parent.board_ori-pi))
-            print("TARGET POSEEEEEEEEEEEEEEEEEEEEEEEEEE = ",self.target_pose)
-        else: print("parent is None")
+        if self.running: return
+        if self.parent.player=='X':
+            x,y = self.parent.start1
+        else: 
+            x,y = self.parent.start2
+        self.target_pose= Pose(x,y,0,
+                        angle_z=cozmo.util.radians(self.parent.board_ori-pi))
+            
         super().start()
-
-
+'''
+Based on which move it is 0-4 for X or 0-3 for O, we go to the 
+corresponding chip to pick it up
+'''
 class PickUpChip(PilotToPose):
     def __init__(self,pose=Pose(0,0,0,angle_z= cozmo.util.radians(0))):
         super().__init__(pose)
         self.target_pose = pose
 
     def start(self,event=None):
-        print('yoooo')
+        if self.running: return
         if self.parent.player == 'X':
             x,y = self.parent.xpick[0]
         else:
@@ -129,31 +152,42 @@ class PickUpChip(PilotToPose):
 
         self.target_pose = Pose(x,y,0,angle_z = cozmo.util.radians(q-math.pi/2))
         super().start(event)
-
-        
+'''
+This assumes cozmo already has the chip in his lift gate, based on the move that
+is made, cozmo will move to the center of the correct box in the board with the
+chip still in his gate 
+'''       
 class PlaceChip(PilotPushToPose):
     def __init__(self,pose=Pose(0,0,0,angle_z= cozmo.util.radians(0))):
         super().__init__(pose)
         self.target_pose = pose
 
     def start(self,event=None):
+        if self.running: return
         if type(self.parent.move_made)==int: #check if game not over
             x,y = self.parent.place_board[self.parent.move_made]
             self.target_pose = Pose(x,y,0,angle_z=cozmo.util.radians(math.nan))
         super().start()
-
-
+'''
+After dropping off the chip, since cozmo should be in the center of the board
+update the chip based on cozmos angle in the board
+'''
 class UpdateChip(StateNode):
     def start(self,event=None):
+        if self.running: return
         super().start()
         q = robot.world.particle_filter.pose[2]
         theta = wrap_angle(self.parent.board_ori-q)
         self.parent.chip.x = self.parent.chip.x - 35*cos(theta)
         self.parent.chip.y = self.parent.chip.y - 35*sin(theta)
         self.parent.chip_angle = theta
+        self.parent.chip.obstacle = True
         self.post_completion()
-
-
+'''
+Send a message to the awaiting cozmo about the move made and what
+angle relative to the board the chip was placed
+Will send data event if the game is over or completion if its still going
+'''
 class SendMessage(StateNode):
     def __init__(self,msg=-1,recipients=[],client=None):
         self.msg = msg # disregard placeholder -1 
@@ -172,7 +206,10 @@ class SendMessage(StateNode):
         self.client.sendMessage(self.msg,sendTo=self.recipients)
         self.post_completion()
 
-
+'''
+Waits to hear from the other cozmo which move he made based
+and to update our state/world maps
+'''
 class AwaitMessage(StateNode):
     def __init__(self):
         super().__init__()
@@ -206,64 +243,26 @@ class AwaitMessage(StateNode):
                     m,chip_angle_rec = self.parent.message
                     print(m,chip_angle_rec)
                     self.parent.move_recieved = m 
-                    self.parent.est_board[self.parent.move_recieved] = self.parent.other
+                    self.parent.est_board[self.parent.move_recieved] =\
+                                                             self.parent.other
+                    mc = self.parent.move_count
+                    #Update worldmap with where chip was placed
                     if self.parent.player == 'X':
-                        chip = robot.world.world_map.objects[1005+self.parent.move_count-1]
+                        chip = robot.world.world_map.objects[1005+mc-1]
                         chip.x,chip.y = self.parent.map_board[m]
                         chip.x -= 35*cos(chip_angle_rec)
                         chip.y -= 35*sin(chip_angle_rec)
                     else:
-                        chip = robot.world.world_map.objects[1000+self.parent.move_count]
+                        chip = robot.world.world_map.objects[1000+mc]
                         chip.x,chip.y = self.parent.map_board[m]
                         chip.x -= 35*cos(chip_angle_rec)
                         chip.y -= 35*sin(chip_angle_rec)
-                        #self.post_data(msgObject["message"])
+
+                self.parent.message = None
                 self.post_completion()
 
-# class AwaitMessage(StateNode):
-#     def __init__(self,senders=[],client=None):
-#         self.senders = senders
-#         self.client = client
-#         super().__init__()
-  
-#     def start(self,event=None):
-#         if self.running: return
-#         super().start(event)
-#         if self.client is None: self.client = self.parent.client
-#         msgObject = self.client.awaitMessage(senders=self.senders)
-    
-#         if msgObject["message"] == "X":
-#             print("game over: X wins")
-#             self.post_data("X")
 
-#         elif msgObject["message"] == "O":
-#             print("game over: O wins")
-#             self.post_data("O")
-
-#         elif msgObject["message"] == "XO":
-#             print("game over: TIED")
-#             self.post_data("XO")
-#         else:
-#             #msg has the tile other guy moved to
-#             m,chip_angle_rec =  msgObject["message"]
-#             print(m,chi[_angle_rec])
-#             self.parent.move_recieved = m 
-#             self.parent.est_board[self.parent.move_recieved] = self.parent.other
-#             if self.parent.player == 'X':
-#                 chip = robot.world.world_map.objects[1005+self.parent.move_count-1]
-#                 chip.x,chip.y = self.parent.map_board[m]
-#                 chip.x -= 35*cos(chip_angle_rec)
-#                 chip.y -= 35*sin(chip_angle_rec)
-#             else:
-#                 chip = robot.world.world_map.objects[1000+self.parent.move_count]
-#                 chip.x,chip.y = self.parent.map_board[m]
-#                 chip.x -= 35*cos(chip_angle_rec)
-#                 chip.y -= 35*sin(chip_angle_rec)
-
-#         #self.post_data(msgObject["message"])
-#         self.post_completion()
-
-
+#StateMachine Program
 class GamePlayO(StateMachineProgram):
     def overrideFunc(self,client,msgObj):
         if self.message is None:
@@ -273,12 +272,9 @@ class GamePlayO(StateMachineProgram):
         self.player = 'O' # 'X'
         self.other  =  'X' # 'O'
         self.level  = 70 
-        if self.player == 'X':
-            self.server = CozmoServer.Server().startServer() #this will print out the IP Address to connect to
-            self.client = CozmoClient.Client().startClient() #this will connect to local server
-        else:
-            #global ip 
-            self.client = CozmoClient.Client(mute=False).startClient(ipaddr="128.2.178.47")
+        #global ip 
+        self.client =\
+              CozmoClient.Client(mute=False).startClient(ipaddr="128.2.178.47")
 
         self.message = None
         self.client.processFunction = self.overrideFunc
@@ -317,29 +313,23 @@ class GamePlayO(StateMachineProgram):
                                                 CustomObjectMarkers.Triangles4,
                                                 40,40,0.1,40,40,True)
 
-        # self.pf = SLAMParticleFilter(robot, num_particles=100,
-        #                              landmark_test=SLAMSensorModel.is_aruco)
         super().__init__(worldmap_viewer = True)
 
     $setup{
-
-
-        # StateNode() =N=> wait: AwaitMessage() =F=> StateNode() =T(0.2)=> wait
-        # wait =C=> Say('Gottem')
         start: SetHeadAngle(-25) =C=> StateNode() =T(1)=> Initialize() 
                            =C=> GoToStart() 
                            =C=> wait: AwaitMessage() =F=> StateNode()
                                                           =T(0.2)=> wait
-
         wait =C=> plan: PlanMove()
-        wait =D('O')=> Say('Yay')
-        wait =D('X')=> Say('Crap')
-        wait =D('XO')=> Say('Oh well')
+        wait =D('X')=>AnimationNode(anim_name='anim_cozmosays_badword_01')
+        wait =D('0')=> AnimationNode(anim_name='anim_greeting_happy_01')
+        wait =D('XO')=> AnimationNode(anim_name='anim_dizzy_reaction_medium_02')
 
         plan =C=> move
-        # #never happens - plan =D('O')=> SendMessage(-1,"all")=C=>#yay
-        plan =D('X')=> SendMessage(-1,"all") =C=> Say('Crap')
-        plan =D('XO')=> SendMessage(-1,"all") =C=> Say('Oh well')
+        plan =D('X')=> SendMessage(-1,"all") 
+             =C=> AnimationNode(anim_name='anim_cozmosays_badword_01')
+        plan =D('XO')=> SendMessage(-1,"all")
+             =C=> AnimationNode(anim_name='anim_dizzy_reaction_medium_02')
 
         move: PickUpChip() =C=> Forward(100) 
                            =CNext=> PlaceChip() =C=> UpdateChip()
@@ -348,12 +338,7 @@ class GamePlayO(StateMachineProgram):
                            =C=> tellr2
         
         tellr2: SendMessage(-1,"all") =C=> wait
-        #wait =C=> plan
-        #wait =D('O')=> Say('Yay')
-        #wait =D('X')=> Say('Crap')
-        #wait =D('XO')=> Say('Oh well')
+        
 
 
     }
-
-
