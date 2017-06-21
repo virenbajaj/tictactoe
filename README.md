@@ -2,13 +2,13 @@
 15-494 Final Project
 Viren Bajaj and Luka Jelenak
 
-#Goals
+## Goals
 The goal of this project is to succesfully have two cozmos play each other in a
 game of tic tac toe without any human intervention. This means the two cozmos
 would have to be able to communicate, know the positions they want to go to,
 and be able to choose which move would be the best.
 
-#How it was done
+## How it was done
 For our game, we assumed the the board would be made up of 20 mm x 20 mm squares
 with a custom object marker in the bottom left corner, and one in the top right
 corner. From these markers, when cozmo sees them, he would be able to find the 
