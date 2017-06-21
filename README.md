@@ -1,6 +1,9 @@
 # Cozmo vs Cozmo Tic Tac Toe
-15-494 Final Project
 Viren Bajaj and Luka Jelenak
+## Watch it in action
+https://www.youtube.com/watch?v=KWnk6U6LCTM&t=24s. 
+
+And take a look at our presentation attached as presentation.pdf 
 
 ## Goals
 The goal of this project is to succesfully have two cozmos play each other in a
@@ -32,5 +35,4 @@ We had to have our own local version of simple_cli, since the general one
 imported some premade custom object markers, which took precedence over the
 markers we used, and thus had incorrect values used for the mapping.
 
-## Watch it in action
-https://www.youtube.com/watch?v=KWnk6U6LCTM&t=24s 
+
