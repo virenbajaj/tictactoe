@@ -3,7 +3,7 @@ Viren Bajaj and Luka Jelenak
 ## Watch it in action
 https://www.youtube.com/watch?v=KWnk6U6LCTM&t=24s. 
 
-And take a look at our presentation attached as presentation.pdf 
+And take a look at our presentation attached as cozmo.pdf 
 
 ## Goals
 The goal of this project is to succesfully have two cozmos play each other in a
