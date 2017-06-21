@@ -31,3 +31,6 @@ professor Touretzky's path planner.
 We had to have our own local version of simple_cli, since the general one 
 imported some premade custom object markers, which took precedence over the
 markers we used, and thus had incorrect values used for the mapping.
+
+## Watch it in action
+https://www.youtube.com/watch?v=KWnk6U6LCTM&t=24s 
