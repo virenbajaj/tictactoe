@@ -23,7 +23,7 @@ Jordan, one cozmo would decide which move he would make based on the state of
 the game using our GameEst.py file, which contained an estimator in which you 
 could vary the AI intelligence.
 
-Then using our State Machine Program, in either GamePlayX.fsm or GamePlayO.fsm
+Then using our **State Machine Program**, in either GamePlayX.fsm or GamePlayO.fsm
 based on which cozmo is playing as which player. The FSM will make cozmo go to
 start before each move, and while one cozmo is waiting for communication,
 the other is choosing a move, executing it after catching a chip, and finally
